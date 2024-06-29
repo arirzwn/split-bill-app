@@ -16,7 +16,7 @@ const initialFriends = [
   },
   {
     id: 499476,
-    name: "Anthony",
+    name: "Anto",
     image: "https://i.pravatar.cc/48?u=499476",
     balance: 0,
   },
@@ -24,8 +24,8 @@ const initialFriends = [
 
 export default function App() {
   const [friends, setFriends] = useState(initialFriends);
-
   const [ShowAddFriend, setShowAddFriend] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState(null);
 
   function handleShowAddFriend() {
     setShowAddFriend((Show) => !Show);
@@ -35,10 +35,18 @@ export default function App() {
     setFriends((friends) => [...friends, friend]);
   }
 
+  function handleSelection(friend) {
+    setSelectedFriend(friend);
+  }
+
   return (
     <div className="app flex gap-4 w">
       <div className="sidebar w-1/2 bg-amber-200 rounded-md ">
-        <FriendList friends={friends} />
+        <FriendList
+          friends={friends}
+          onSelection={handleSelection}
+          selectedFriend={selectedFriend}
+        />
         {ShowAddFriend && <FormAddFriend onAddFriend={handleAddFriend} />}
         <div className="flex justify-end m-4">
           <Button onClick={handleShowAddFriend}>
@@ -46,27 +54,36 @@ export default function App() {
           </Button>
         </div>
       </div>
-      <div className="w-1/2">
-        <FormSplitBill />
-      </div>
+      {selectedFriend && (
+        <div className="w-1/2">
+          <FormSplitBill selectedFriend={selectedFriend} />
+        </div>
+      )}
     </div>
   );
 }
 
-function FriendList({ friends }) {
+function FriendList({ friends, onSelection, selectedFriend }) {
   return (
     <ul>
       {friends.map((friend) => (
-        <Friend friend={friend} key={friend.id} />
+        <Friend
+          friend={friend}
+          key={friend.id}
+          selectedFriend={selectedFriend}
+          onSelection={onSelection}
+        />
       ))}
     </ul>
   );
 }
 
-function Friend({ friend }) {
+function Friend({ friend, onSelection, selectedFriend }) {
+  // const isSelected = selectedFriend.id === friend.id;
+
   return (
     <li className="w-full flex items-center justify-between gap-4 mb-4 hover:bg-amber-200 w-[35%] p-4 rounded-md">
-      <div className="flex gap-4">
+      <div className="flex gap-4 ">
         <img src={friend.image} alt={friend.name} className="rounded-full" />
         <div className="text-left">
           {" "}
@@ -84,7 +101,7 @@ function Friend({ friend }) {
           {friend.balance === 0 && <p>You and {friend.name} even</p>}
         </div>
       </div>
-      <Button>Select</Button>
+      <Button onClick={() => onSelection(friend)}>Select</Button>
     </li>
   );
 }
@@ -153,12 +170,12 @@ function FormAddFriend({ onAddFriend }) {
   );
 }
 
-function FormSplitBill() {
+function FormSplitBill({ selectedFriend }) {
   return (
     <div className="w-full">
       <form className="bg-amber-200 rounded-md space-y-4">
-        <h1 className="text-xl py-4 font-semibold text-center">
-          SPLIT A BILL WITH X
+        <h1 className="text-xl py-4 font-semibold text-center uppercase">
+          SPLIT A BILL WITH {selectedFriend.name}
         </h1>
 
         <div className="flex items-center justify-start mx-4">
@@ -170,7 +187,7 @@ function FormSplitBill() {
           <input type="text" className="p-2 w-1/2 rounded-md" />
         </div>
         <div className="flex items-center justify-start mx-4">
-          <label className="flex-grow">X's expense</label>
+          <label className="flex-grow">{selectedFriend.name}'s expense</label>
           <input type="text" className="p-2 w-1/2 rounded-md" disabled />
         </div>
 
@@ -178,7 +195,7 @@ function FormSplitBill() {
           <label className="flex-grow">Whos's paying the bill</label>
           <select name="" id="" className="px-4 py-2 rounded-md">
             <option value="user">You</option>
-            <option value="friend">X</option>
+            <option value="friend">{selectedFriend.name}</option>
           </select>
         </div>
 
