@@ -36,7 +36,24 @@ export default function App() {
   }
 
   function handleSelection(friend) {
-    setSelectedFriend(friend);
+    // setSelectedFriend(friend);
+    setSelectedFriend((cur) => (cur?.id === friend.id ? null : friend));
+    handleShowAddFriend(false);
+  }
+
+  function handleSplitBill(value) {
+    console.log(value);
+
+    setFriends((friends) =>
+      friends.map((friend) =>
+        friend.id === selectedFriend.id
+          ? {
+              ...friend,
+              balance: friend.balance + value,
+            }
+          : friend,
+      ),
+    );
   }
 
   return (
@@ -56,7 +73,10 @@ export default function App() {
       </div>
       {selectedFriend && (
         <div className="w-1/2">
-          <FormSplitBill selectedFriend={selectedFriend} />
+          <FormSplitBill
+            selectedFriend={selectedFriend}
+            onSplitBill={handleSplitBill}
+          />
         </div>
       )}
     </div>
@@ -79,29 +99,38 @@ function FriendList({ friends, onSelection, selectedFriend }) {
 }
 
 function Friend({ friend, onSelection, selectedFriend }) {
-  // const isSelected = selectedFriend.id === friend.id;
+  const isSelected = selectedFriend?.id === friend.id;
 
   return (
-    <li className="w-full flex items-center justify-between gap-4 mb-4 hover:bg-amber-200 w-[35%] p-4 rounded-md">
-      <div className="flex gap-4 ">
-        <img src={friend.image} alt={friend.name} className="rounded-full" />
-        <div className="text-left">
-          {" "}
-          <h3>{friend.name}</h3>
-          {friend.balance < 0 && (
-            <p className="text-red-800">
-              You owe {friend.name} ${Math.abs(friend.balance)}{" "}
-            </p>
-          )}
-          {friend.balance > 0 && (
-            <p className="text-green-600">
-              {friend.name} owes you ${Math.abs(friend.balance)}{" "}
-            </p>
-          )}
-          {friend.balance === 0 && <p>You and {friend.name} even</p>}
+    <li className="rounded-md">
+      <div
+        className={`flex justify-between p-2 ${isSelected ? "bg-amber-300" : ""} `}
+      >
+        <div className="text-left flex items-center">
+          <img
+            src={friend.image}
+            alt={friend.name}
+            className="rounded-full mr-4"
+          />{" "}
+          <div className="flex-col">
+            <h3>{friend.name}</h3>
+            {friend.balance < 0 && (
+              <p className="text-red-800">
+                You owe {friend.name} ${Math.abs(friend.balance)}{" "}
+              </p>
+            )}
+            {friend.balance > 0 && (
+              <p className="text-green-600">
+                {friend.name} owes you ${Math.abs(friend.balance)}{" "}
+              </p>
+            )}
+            {friend.balance === 0 && <p>You and {friend.name} even</p>}
+          </div>
         </div>
+        <Button onClick={() => onSelection(friend)}>
+          {isSelected ? "Close" : "Select"}
+        </Button>
       </div>
-      <Button onClick={() => onSelection(friend)}>Select</Button>
     </li>
   );
 }
@@ -109,7 +138,7 @@ function Friend({ friend, onSelection, selectedFriend }) {
 function Button({ children, className, onClick }) {
   return (
     <button
-      className={`px-4 py-2 rounded-md bg-amber-400 hover:bg-amber-500 ${className}`}
+      className={`w-16 y-2 rounded-md bg-amber-400 hover:bg-amber-500 ${className}`}
       onClick={onClick}
     >
       {children}
@@ -170,30 +199,71 @@ function FormAddFriend({ onAddFriend }) {
   );
 }
 
-function FormSplitBill({ selectedFriend }) {
+function FormSplitBill({ selectedFriend, onSplitBill }) {
+  const [bill, setBill] = useState("");
+  const [paidByUser, setPaidByUser] = useState("");
+  const paidByFriend = bill ? bill - paidByUser : "";
+  const [whoIsPaying, setWhoIsPaying] = useState("user");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    if (!bill || !paidByUser) return;
+
+    onSplitBill(whoIsPaying === "user" ? paidByFriend : -paidByUser);
+  }
+
   return (
     <div className="w-full">
-      <form className="bg-amber-200 rounded-md space-y-4">
+      <form
+        className="bg-amber-200 rounded-md space-y-4"
+        onSubmit={handleSubmit}
+      >
         <h1 className="text-xl py-4 font-semibold text-center uppercase">
           SPLIT A BILL WITH {selectedFriend.name}
         </h1>
 
         <div className="flex items-center justify-start mx-4">
           <label className="flex-grow">Bill value</label>
-          <input type="text" className="p-2 w-1/2 rounded-md" />
+          <input
+            className="p-2 w-1/2 rounded-md"
+            type="text"
+            value={bill}
+            onChange={(e) => setBill(Number(e.target.value))}
+          />
         </div>
         <div className="flex items-center justify-start mx-4">
           <label className="flex-grow">Your expense</label>
-          <input type="text" className="p-2 w-1/2 rounded-md" />
+          <input
+            type="text"
+            className="p-2 w-1/2 rounded-md"
+            value={paidByUser}
+            onChange={(e) =>
+              setPaidByUser(
+                Number(e.target.value) > bill
+                  ? paidByUser
+                  : Number(e.target.value),
+              )
+            }
+          />
         </div>
         <div className="flex items-center justify-start mx-4">
           <label className="flex-grow">{selectedFriend.name}'s expense</label>
-          <input type="text" className="p-2 w-1/2 rounded-md" disabled />
+          <input
+            type="text"
+            className="p-2 w-1/2 rounded-md"
+            disabled
+            value={paidByFriend}
+          />
         </div>
 
         <div className="flex items-center justify-start mx-4">
           <label className="flex-grow">Whos's paying the bill</label>
-          <select name="" id="" className="px-4 py-2 rounded-md">
+          <select
+            className="px-4 py-2 rounded-md"
+            value={whoIsPaying}
+            onChange={(e) => setWhoIsPaying(e.target.value)}
+          >
             <option value="user">You</option>
             <option value="friend">{selectedFriend.name}</option>
           </select>
